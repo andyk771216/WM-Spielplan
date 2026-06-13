@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WM 2026 – Spielplan & Tabellen</title>
+<style>
+  :root {
+    --wc-green: #00843D;
+    --wc-purple: #7B2D8E;
+    --wc-pink: #E5007D;
+    --wc-orange: #FF6A13;
+    --wc-blue: #0072CE;
+    --wc-yellow: #FFD100;
+    --card-bg: rgba(255,255,255,0.96);
+    --text-dark: #1a1a1a;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    color: var(--text-dark);
+    background: linear-gradient(135deg, var(--wc-green) 0%, var(--wc-blue) 35%, var(--wc-purple) 70%, var(--wc-pink) 100%);
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  header {
+    text-align: center;
+    color: #fff;
+    margin-bottom: 24px;
+    padding: 20px 10px;
+  }
+
+  header .badge {
+    display: inline-block;
+    background: var(--wc-yellow);
+    color: var(--text-dark);
+    font-weight: 800;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: 2.2rem;
+    font-weight: 800;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  }
+
+  header p {
+    margin: 6px 0 0;
+    opacity: 0.9;
+    font-size: 0.95rem;
+  }
+
+  .status-bar {
+    text-align: center;
+    color: #fff;
+    font-size: 0.85rem;
+    opacity: 0.9;
+    margin-bottom: 16px;
+  }
+
+  .groups-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+    gap: 18px;
+  }
+
+  .group-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+  }
+
+  .group-card.highlight {
+    outline: 3px solid var(--wc-yellow);
+  }
+
+  .group-card h2 {
+    margin: 0 0 10px;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--wc-purple);
+    border-bottom: 3px solid var(--wc-yellow);
+    display: inline-block;
+    padding-bottom: 3px;
+  }
+
+  table.standings {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    margin-bottom: 12px;
+  }
+
+  table.standings th, table.standings td {
+    padding: 5px 4px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+  }
+
+  table.standings th {
+    background: var(--wc-green);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  table.standings td:first-child, table.standings th:first-child {
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  table.standings td.pts {
+    font-weight: 800;
+    color: var(--wc-purple);
+  }
+
+  table.standings tr.qualified td:first-child {
+    border-left: 3px solid var(--wc-green);
+    padding-left: 4px;
+  }
+
+  .fixtures {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 0.82rem;
+  }
+
+  .fixtures li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid #f2f2f2;
+    gap: 8px;
+  }
+
+  .fixtures li:last-child {
+    border-bottom: none;
+  }
+
+  .fixtures .when {
+    color: #888;
+    font-size: 0.72rem;
+    min-width: 78px;
+  }
+
+  .fixtures .teams {
+    flex: 1;
+    font-weight: 600;
+  }
+
+  .fixtures .score {
+    font-weight: 800;
+    color: var(--wc-orange);
+    min-width: 44px;
+    text-align: right;
+  }
+
+  .fixtures li.live .score {
+    color: var(--wc-pink);
+  }
+
+  .legend {
+    font-size: 0.7rem;
+    color: #999;
+    margin-top: 6px;
+  }
+
+  .loading {
+    text-align: center;
+    color: #fff;
+    padding: 40px;
+    font-size: 1.1rem;
+  }
+
+  footer {
+    text-align: center;
+    color: #fff;
+    opacity: 0.75;
+    font-size: 0.8rem;
+    margin-top: 20px;
+    padding-bottom: 20px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="badge">FIFA World Cup 2026</div>
+    <h1>⚽ WM 2026 – Spielplan & Gruppentabellen</h1>
+    <p>Kanada · Mexiko · USA — 11. Juni bis 19. Juli 2026</p>
+  </header>
+
+  <div class="status-bar" id="status-bar">Lade Daten…</div>
+
+  <div class="groups-grid" id="groups-grid">
+    <div class="loading">Lade Spielplan und Ergebnisse…</div>
+  </div>
+
+  <footer>
+    Live-Daten von OpenLigaDB · Aktualisiert sich automatisch alle 2 Minuten · Tabellen ohne direkten Vergleich/Fairplay-Wertung (vereinfachte Sortierung)
+  </footer>
+</div>
+
+<script>
+// Gruppen A-L mit den 4 Mannschaften (Stand nach Auslosung & Playoffs)
+const groupTeams = {
+  "A": ["Mexiko", "Südafrika", "Südkorea", "Tschechien"],
+  "B": ["Kanada", "Bosnien-Herzegowina", "Katar", "Schweiz"],
+  "C": ["Brasilien", "Marokko", "Haiti", "Schottland"],
+  "D": ["USA", "Paraguay", "Australien", "Türkei"],
+  "E": ["Deutschland", "Curaçao", "Elfenbeinküste", "Ecuador"],
+  "F": ["Niederlande", "Japan", "Schweden", "Tunesien"],
+  "G": ["Belgien", "Ägypten", "Iran", "Neuseeland"],
+  "H": ["Spanien", "Kap Verde", "Saudi-Arabien", "Uruguay"],
+  "I": ["Frankreich", "Senegal", "Norwegen", "Irak"],
+  "J": ["Argentinien", "Algerien", "Österreich", "Jordanien"],
+  "K": ["Portugal", "Kolumbien", "Usbekistan", "DR Kongo"],
+  "L": ["England", "Ghana", "Kroatien", "Panama"]
+};
+
+const flags = {
+  "Mexiko": "🇲🇽", "Südafrika": "🇿🇦", "Südkorea": "🇰🇷", "Tschechien": "🇨🇿",
+  "Kanada": "🇨🇦", "Bosnien-Herzegowina": "🇧🇦", "Katar": "🇶🇦", "Schweiz": "🇨🇭",
+  "Brasilien": "🇧🇷", "Marokko": "🇲🇦", "Haiti": "🇭🇹", "Schottland": "🏴",
+  "USA": "🇺🇸", "Paraguay": "🇵🇾", "Australien": "🇦🇺", "Türkei": "🇹🇷",
+  "Deutschland": "🇩🇪", "Curaçao": "🇨🇼", "Elfenbeinküste": "🇨🇮", "Ecuador": "🇪🇨",
+  "Niederlande": "🇳🇱", "Japan": "🇯🇵", "Schweden": "🇸🇪", "Tunesien": "🇹🇳",
+  "Belgien": "🇧🇪", "Ägypten": "🇪🇬", "Iran": "🇮🇷", "Neuseeland": "🇳🇿",
+  "Spanien": "🇪🇸", "Kap Verde": "🇨🇻", "Saudi-Arabien": "🇸🇦", "Uruguay": "🇺🇾",
+  "Frankreich": "🇫🇷", "Senegal": "🇸🇳", "Norwegen": "🇳🇴", "Irak": "🇮🇶",
+  "Argentinien": "🇦🇷", "Algerien": "🇩🇿", "Österreich": "🇦🇹", "Jordanien": "🇯🇴",
+  "Portugal": "🇵🇹", "Kolumbien": "🇨🇴", "Usbekistan": "🇺🇿", "DR Kongo": "🇨🇩",
+  "England": "🏴", "Ghana": "🇬🇭", "Kroatien": "🇭🇷", "Panama": "🇵🇦"
+};
+
+// Build a lookup: team name -> group letter
+const teamToGroup = {};
+Object.entries(groupTeams).forEach(([letter, teams]) => {
+  teams.forEach(t => teamToGroup[t] = letter);
+});
+
+function flagFor(name) {
+  return flags[name] || "🏳️";
+}
+
+async function loadData() {
+  const statusBar = document.getElementById('status-bar');
+  try {
+    const urls = [1, 2, 3].map(r => `https://api.openligadb.de/getmatchdata/wm2026/2026/${r}`);
+    const responses = await Promise.all(urls.map(u => fetch(u)));
+    const datasets = await Promise.all(responses.map(r => r.json()));
+    const allMatches = datasets.flat();
+
+    render(allMatches);
+
+    const now = new Date().toLocaleString('de-DE', {
+      timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', second: '2-digit',
+      day: '2-digit', month: '2-digit'
+    });
+    statusBar.textContent = `Zuletzt aktualisiert: ${now} Uhr (deutsche Zeit)`;
+  } catch (err) {
+    statusBar.textContent = `Fehler beim Laden der Daten: ${err.message}`;
+  }
+}
+
+function render(allMatches) {
+  const grid = document.getElementById('groups-grid');
+  grid.innerHTML = '';
+
+  Object.keys(groupTeams).sort().forEach(letter => {
+    const teams = groupTeams[letter];
+    const matches = allMatches.filter(m => teamToGroup[m.team1.teamName] === letter);
+
+    // Standings berechnen
+    const table = {};
+    teams.forEach(t => table[t] = { team: t, sp: 0, s: 0, u: 0, n: 0, tore: 0, gegentore: 0, pkt: 0 });
+
+    matches.forEach(m => {
+      if (!m.matchIsFinished) return;
+      const endResult = (m.matchResults || []).find(r => r.resultTypeID === 2) || (m.matchResults || []).slice(-1)[0];
+      if (!endResult) return;
+
+      const t1 = m.team1.teamName, t2 = m.team2.teamName;
+      const p1 = endResult.pointsTeam1, p2 = endResult.pointsTeam2;
+      if (!table[t1] || !table[t2]) return;
+
+      table[t1].sp++; table[t2].sp++;
+      table[t1].tore += p1; table[t1].gegentore += p2;
+      table[t2].tore += p2; table[t2].gegentore += p1;
+
+      if (p1 > p2) { table[t1].s++; table[t1].pkt += 3; table[t2].n++; }
+      else if (p1 < p2) { table[t2].s++; table[t2].pkt += 3; table[t1].n++; }
+      else { table[t1].u++; table[t2].u++; table[t1].pkt += 1; table[t2].pkt += 1; }
+    });
+
+    const sorted = Object.values(table).sort((a, b) => {
+      if (b.pkt !== a.pkt) return b.pkt - a.pkt;
+      const diffA = a.tore - a.gegentore, diffB = b.tore - b.gegentore;
+      if (diffB !== diffA) return diffB - diffA;
+      if (b.tore !== a.tore) return b.tore - a.tore;
+      return a.team.localeCompare(b.team);
+    });
+
+    // Spiele sortiert nach Datum
+    const sortedMatches = [...matches].sort((a, b) => new Date(a.matchDateTimeUTC) - new Date(b.matchDateTimeUTC));
+
+    const card = document.createElement('div');
+    card.className = 'group-card' + (letter === 'E' ? ' highlight' : '');
+
+    let tableRows = sorted.map((row, idx) => `
+      <tr class="${idx < 2 ? 'qualified' : ''}">
+        <td>${flagFor(row.team)} ${row.team}</td>
+        <td>${row.sp}</td>
+        <td>${row.s}</td>
+        <td>${row.u}</td>
+        <td>${row.n}</td>
+        <td>${row.tore}:${row.gegentore}</td>
+        <td>${row.tore - row.gegentore}</td>
+        <td class="pts">${row.pkt}</td>
+      </tr>
+    `).join('');
+
+    let fixtureRows = sortedMatches.map(m => {
+      const date = new Date(m.matchDateTimeUTC);
+      const when = date.toLocaleString('de-DE', {
+        timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+      });
+      let scoreHtml, liveClass = '';
+      if (m.matchIsFinished) {
+        const endResult = (m.matchResults || []).find(r => r.resultTypeID === 2) || (m.matchResults || []).slice(-1)[0];
+        scoreHtml = endResult ? `${endResult.pointsTeam1}:${endResult.pointsTeam2}` : '–';
+      } else if (date < new Date()) {
+        scoreHtml = 'live';
+        liveClass = 'live';
+      } else {
+        scoreHtml = '–:–';
+      }
+      return `
+        <li class="${liveClass}">
+          <span class="when">${when}</span>
+          <span class="teams">${flagFor(m.team1.teamName)} ${m.team1.teamName} – ${m.team2.teamName} ${flagFor(m.team2.teamName)}</span>
+          <span class="score">${scoreHtml}</span>
+        </li>
+      `;
+    }).join('');
+
+    card.innerHTML = `
+      <h2>Gruppe ${letter}</h2>
+      <table class="standings">
+        <thead>
+          <tr><th>Team</th><th>Sp</th><th>S</th><th>U</th><th>N</th><th>Tore</th><th>Diff</th><th>Pkt</th></tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+      <ul class="fixtures">${fixtureRows}</ul>
+    `;
+
+    grid.appendChild(card);
+  });
+}
+
+loadData();
+setInterval(loadData, 120000);
+</script>
+</body>
+</html>
